@@ -27,12 +27,30 @@ public class RestAssuredWrapper {
         return requestSpecification.get(new URI(url));
     }
 
-    public static void performGetOperationsWithParams(Map<String, String> params, String url) {
+    public static ResponseOptions<Response> performGetOperationsWithParams(String url, Map<String, String> params) {
         requestSpecification.pathParams(params);
-        try {
-            requestSpecification.get(new URI(url));
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
+        return requestSpecification.get(url);
+    }
+
+    public static ResponseOptions<Response> performPostOperationsWithParamsAndBody(String url, Map<String, String> body, Map<String, String> pathParams) {
+        requestSpecification.pathParams(pathParams);
+        requestSpecification.body(body);
+        return requestSpecification.post(url);
+    }
+
+    public static ResponseOptions<Response> performPostOperationsWithBody(String url, Map<String, String> body) {
+        requestSpecification.body(body);
+        return requestSpecification.post(url);
+    }
+
+    public static ResponseOptions<Response> performDeleteOperationsWithParams(String url, Map<String, String> pathParams) {
+        requestSpecification.pathParams(pathParams);
+        return requestSpecification.delete(url);
+    }
+
+    public static ResponseOptions<Response> performPutOperationsWithParamsAndBody(String url, Map<String, String> pathParams, Map<String, String> body) {
+        requestSpecification.pathParams(pathParams);
+        requestSpecification.body(body);
+        return requestSpecification.put(url);
     }
 }
