@@ -1,16 +1,21 @@
+import Address.Address;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.response.Response;
 import io.restassured.response.ResponseOptions;
+import model.Location;
+import model.Posts;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.core.IsNot;
 
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static Wrapper.RestAssuredWrapper.*;
 import static io.restassured.RestAssured.with;
@@ -22,7 +27,8 @@ public class MyStepDefs {
     @Given("^I navigate to the \"([^\"]*)\" location$")
     public void iNavigateToTheLocation(String urlLocation) {
         try {
-            responseOptions = performGetOperation(urlLocation);
+            String accessToken = responseOptions.getBody().jsonPath().get("accessToken");
+            responseOptions = performGetOperationWithBearerToken(urlLocation, accessToken);
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
@@ -44,8 +50,9 @@ public class MyStepDefs {
 
     @Then("the author name \"([^\"]*)\" is present in the list of authors$")
     public void theAuthorNameIsRetrieved(final String authorName) {
-        List<String> listOfAuthors = responseOptions.getBody().jsonPath().get("author");
-        assertThat(authorName + " is not present", listOfAuthors.contains(authorName));
+        Posts[] listOfPosts = responseOptions.getBody().as(Posts[].class);
+        boolean isDataPresent = Arrays.stream(listOfPosts).anyMatch(post -> post.getAuthor().equals(authorName));
+        assertThat(authorName + " is not present", isDataPresent);
     }
 
     @Given("I perform the post request \"([^\"]*)\" with following data$")
@@ -109,5 +116,40 @@ public class MyStepDefs {
     @Then("the title \"([^\"]*)\" is present in the list of posts$")
     public void theTitleIsPresentInTheListOfPosts(String titleName) {
         assertThat(titleName + "is not present", responseOptions.getBody().jsonPath().get("title").equals(titleName));
+    }
+
+    @Given("^I logged into the application \"([^\"]*)\" with following credentials$")
+    public void iLoggedIntoTheApplicationWithFollowingCredentials(String url, Map<String, String> loginCredentials) {
+        HashMap<String, String> loginPayload = new HashMap<>();
+        loginCredentials.forEach(loginPayload::put);
+        responseOptions = performPostOperationsWithBody(url, loginPayload);
+    }
+
+    @And("I perform the GET request \"([^\"]*)\" with following query data$")
+    public void iPerformTheGETRequestWithFollowingQueryData(String url, Map<String, String> queryParams) {
+        String accessToken = responseOptions.getBody().jsonPath().get("accessToken");
+        Map<String, String> queryParamsPayload = new HashMap<>();
+        queryParams.forEach(queryParamsPayload::put);
+        responseOptions = performGetOperationsWithQueryParams(url, queryParamsPayload, accessToken);
+    }
+
+    @Then("the \"([^\"]*)\" location with address \"([^\"]*)\" is present$")
+    public void theLocationWithAddressIsPresent(String addressType, String streetName) {
+        Location[] locations = responseOptions.getBody().as(Location[].class);
+        Address expectedAddress = Objects.requireNonNull(Arrays.stream(locations)
+                .findFirst()
+                .orElse(null))
+                .getAddress()
+                .stream()
+                .filter(address -> address.getType().equals(addressType))
+                .findFirst().
+                        orElse(null);
+        assertThat(streetName + " is not present in the response", Objects.requireNonNull(expectedAddress).getStreet().equals(streetName));
+    }
+
+    @Then("the json schema should match with the response$")
+    public void theJsonSchemaShouldMatchWithTheResponse() {
+        String s = responseOptions.getBody().asString();
+        assertThat(s, JsonSchemaValidator.matchesJsonSchemaInClasspath("posts.json"));
     }
 }

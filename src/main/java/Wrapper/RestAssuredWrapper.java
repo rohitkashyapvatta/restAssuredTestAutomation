@@ -3,6 +3,7 @@ package Wrapper;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
+import io.restassured.http.Header;
 import io.restassured.response.Response;
 import io.restassured.response.ResponseOptions;
 import io.restassured.specification.RequestSpecification;
@@ -27,8 +28,24 @@ public class RestAssuredWrapper {
         return requestSpecification.get(new URI(url));
     }
 
+    public static ResponseOptions<Response> performGetOperationWithBearerToken(String url, String token) throws URISyntaxException {
+        requestSpecification.header(new Header("Authorization", "Bearer " + token));
+        return requestSpecification.get(new URI(url));
+    }
+
+    public static ResponseOptions<Response> performGetOperationWithBody(String url, Map<String, String> body) throws URISyntaxException {
+        requestSpecification.body(body);
+        return requestSpecification.get(new URI(url));
+    }
+
     public static ResponseOptions<Response> performGetOperationsWithParams(String url, Map<String, String> params) {
         requestSpecification.pathParams(params);
+        return requestSpecification.get(url);
+    }
+
+    public static ResponseOptions<Response> performGetOperationsWithQueryParams(String url, Map<String, String> queryParams, String token) {
+        requestSpecification.header(new Header("Authorization", "Bearer " + token));
+        requestSpecification.queryParams(queryParams);
         return requestSpecification.get(url);
     }
 
