@@ -20,8 +20,7 @@ public class RestAssuredWrapper {
         RequestSpecBuilder requestSpecBuilder = new RequestSpecBuilder();
         requestSpecBuilder.setBaseUri("http://localhost:3000");
         requestSpecBuilder.setContentType(ContentType.JSON);
-        RequestSpecification build = requestSpecBuilder.build();
-        requestSpecification = RestAssured.given().spec(build);
+        requestSpecification = RestAssured.given().spec(requestSpecBuilder.build());
     }
 
     public static ResponseOptions<Response> performGetOperation(String url) throws URISyntaxException {

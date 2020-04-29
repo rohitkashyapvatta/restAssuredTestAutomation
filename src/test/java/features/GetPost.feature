@@ -1,15 +1,12 @@
-Feature:
-  Validate the Get Post Operation using Rest Assured
+Feature:  Validate the Get Post Operation using Rest Assured
 
   Scenario: Validate the GET Operation
-    Given I navigate to the "/posts" location
+    Given I logged into the application "/login" with following credentials
+      | email    | rohitkashyapvatta@mail.com |
+      | password | Rehan#2019                 |
+    And I read the json file
+    And I navigate to the "/posts" location
     Then  the author name "rvatta" is present in the list of authors
-
-  Scenario: Validate the POST Operation
-    Given I perform the post request "/posts/{profileNo}/profile" with following data
-      | name      | Sams |
-      | profileNo | 2    |
-    Then the response body should have name as "Sams"
 
   Scenario: Validate the DELETE operation
     Given I perform the post request "/posts/" with following body data
@@ -55,5 +52,5 @@ Feature:
       | email    | rohitkashyapvatta@mail.com |
       | password | Rehan#2019                 |
     And I perform the GET request "/posts/{id}/" with following data
-      | id | 1 |
+      | id | 1 | performGetOperation
     Then the json schema should match with the response

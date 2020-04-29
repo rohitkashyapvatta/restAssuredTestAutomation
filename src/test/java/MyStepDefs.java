@@ -1,4 +1,5 @@
 import Address.Address;
+import Wrapper.RestAssuredWrapperv2;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -10,33 +11,32 @@ import model.Location;
 import model.Posts;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.core.IsNot;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
-import java.net.URISyntaxException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static Wrapper.RestAssuredWrapper.*;
 import static io.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class MyStepDefs {
     private static ResponseOptions<Response> responseOptions;
+    private static String accessToken;
 
     @Given("^I navigate to the \"([^\"]*)\" location$")
     public void iNavigateToTheLocation(String urlLocation) {
-        try {
-            String accessToken = responseOptions.getBody().jsonPath().get("accessToken");
-            responseOptions = performGetOperationWithBearerToken(urlLocation, accessToken);
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
+        RestAssuredWrapperv2 restAssuredWrapperv2 = new RestAssuredWrapperv2(urlLocation, "GET", accessToken);
+        responseOptions = restAssuredWrapperv2.ExecuteAPI();
     }
 
     @And("I look for post with id \"([^\"]*)\" with author name as \"([^\"]*)\"$")
     public void iLookForPostWithId(String postId, String authorName) {
-        assertThat("", responseOptions.getBody().jsonPath().get("author").equals(authorName));
+        org.hamcrest.MatcherAssert.assertThat("", responseOptions.getBody().jsonPath().get("author").equals(authorName));
     }
 
     @And("I look for post with author as \"([^\"]*)\"$")
@@ -55,16 +55,6 @@ public class MyStepDefs {
         assertThat(authorName + " is not present", isDataPresent);
     }
 
-    @Given("I perform the post request \"([^\"]*)\" with following data$")
-    public void iPerformThePostRequestWithFollowingData(String pathLocation, Map<String, String> listOfThings) {
-        HashMap<String, String> body = new HashMap<>();
-        HashMap<String, String> params = new HashMap<>();
-        int size = listOfThings.size();
-        listOfThings.entrySet().stream().limit(size - 1).forEach(e -> body.put(e.getKey(), e.getValue()));
-        listOfThings.entrySet().stream().skip(1).forEach(e -> params.put(e.getKey(), e.getValue()));
-        responseOptions = performPostOperationsWithParamsAndBody(pathLocation, body, params);
-    }
-
     @Then("the response body should have name as \"([^\"]*)\"$")
     public void theResponseBodyShouldHaveNameAs(String name) {
         String actualName = responseOptions.getBody().jsonPath().get("name");
@@ -75,14 +65,16 @@ public class MyStepDefs {
     public void iPerformTheDELETERequestWithFollowingData(String url, Map<String, String> postDetails) {
         HashMap<String, String> pathParams = new HashMap<>();
         postDetails.forEach(pathParams::put);
-        responseOptions = performDeleteOperationsWithParams(url, pathParams);
+        RestAssuredWrapperv2 restAssuredWrapperv2 = new RestAssuredWrapperv2(url, "DELETE", accessToken);
+        responseOptions = restAssuredWrapperv2.ExecuteWithPathParams(pathParams);
     }
 
     @And("I perform the GET request \"([^\"]*)\" with following data$")
     public void iPerformTheGETRequestWithFollowingData(String url, Map<String, String> postDetails) {
         HashMap<String, String> pathParams = new HashMap<>();
         postDetails.forEach(pathParams::put);
-        responseOptions = performGetOperationsWithParams(url, pathParams);
+        RestAssuredWrapperv2 restAssuredWrapperv2 = new RestAssuredWrapperv2(url, "GET", accessToken);
+        responseOptions = restAssuredWrapperv2.ExecuteWithPathParams(pathParams);
     }
 
     @Then("the author name \"([^\"]*)\" is not present in the list of authors$")
@@ -94,7 +86,8 @@ public class MyStepDefs {
     public void iPerformThePostRequestWithFollowingBodyData(String pathLocation, Map<String, String> apiBodyDetails) {
         HashMap<String, String> body = new HashMap<>();
         apiBodyDetails.forEach(body::put);
-        responseOptions = performPostOperationsWithBody(pathLocation, body);
+        RestAssuredWrapperv2 restAssuredWrapperv2 = new RestAssuredWrapperv2(pathLocation, "POST", accessToken);
+        responseOptions = restAssuredWrapperv2.ExecuteWithBody(body);
     }
 
     @When("I perform the PUT request \"([^\"]*)\" with following data$")
@@ -110,7 +103,8 @@ public class MyStepDefs {
             }
             break;
         }
-        responseOptions = performPutOperationsWithParamsAndBody(pathLocation, pathParams, body);
+        RestAssuredWrapperv2 restAssuredWrapperv2 = new RestAssuredWrapperv2(pathLocation, "PUT", accessToken);
+        responseOptions = restAssuredWrapperv2.ExecuteWithBodyAndPathParams(body, pathParams);
     }
 
     @Then("the title \"([^\"]*)\" is present in the list of posts$")
@@ -120,17 +114,19 @@ public class MyStepDefs {
 
     @Given("^I logged into the application \"([^\"]*)\" with following credentials$")
     public void iLoggedIntoTheApplicationWithFollowingCredentials(String url, Map<String, String> loginCredentials) {
+
         HashMap<String, String> loginPayload = new HashMap<>();
         loginCredentials.forEach(loginPayload::put);
-        responseOptions = performPostOperationsWithBody(url, loginPayload);
+        RestAssuredWrapperv2 restAssuredWrapperv2 = new RestAssuredWrapperv2(url, "POST", null);
+        accessToken = restAssuredWrapperv2.Authenticate(loginPayload);
     }
 
     @And("I perform the GET request \"([^\"]*)\" with following query data$")
     public void iPerformTheGETRequestWithFollowingQueryData(String url, Map<String, String> queryParams) {
-        String accessToken = responseOptions.getBody().jsonPath().get("accessToken");
         Map<String, String> queryParamsPayload = new HashMap<>();
         queryParams.forEach(queryParamsPayload::put);
-        responseOptions = performGetOperationsWithQueryParams(url, queryParamsPayload, accessToken);
+        RestAssuredWrapperv2 restAssuredWrapperv2 = new RestAssuredWrapperv2(url, "GET", accessToken);
+        responseOptions = restAssuredWrapperv2.ExecuteWithQueryParams(queryParamsPayload);
     }
 
     @Then("the \"([^\"]*)\" location with address \"([^\"]*)\" is present$")
@@ -151,5 +147,14 @@ public class MyStepDefs {
     public void theJsonSchemaShouldMatchWithTheResponse() {
         String s = responseOptions.getBody().asString();
         assertThat(s, JsonSchemaValidator.matchesJsonSchemaInClasspath("posts.json"));
+    }
+
+    @And("I read the json file")
+    public void iReadTheJsonFile() throws IOException, ParseException {
+        JSONParser jsonParser = new JSONParser();
+        JSONObject body = (JSONObject) jsonParser.parse(
+                new FileReader("src/jsonFiles/post.json"));
+        body.put("id", 55);
+        String s = body.toJSONString();
     }
 }
